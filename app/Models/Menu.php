@@ -15,13 +15,13 @@ class Menu extends Model
     public $timestamps = true;
 
     public static function getFilteredData($search) {
-        return Empleado::select('menu.*', 'categoria.nombre AS categoria')
+        return Menu::select('menu.*', 'categoria.nombre AS categoria')
             ->join("categoria", "categoria.codigo", "=", "menu.category")
 
             ->where('menu.codigo', 'like', $search)
             ->orWhere('menu.nombre', 'like', $search)
-            ->orWhere('menu.apellido', 'like', $search)
-            ->orWhere('menu.telefono', 'like', $search)
+            ->orWhere('menu.descripcion', 'like', $search)
+            ->orWhere('menu.precio', 'like', $search)
             ->orWhere('categoria.nombre', 'like', $search);
     }
 

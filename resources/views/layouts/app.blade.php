@@ -78,10 +78,10 @@
                             </li>
 
                             <li class="nav-item">
-                            <a class="nav-link fw-bold fs-5" href="#">Clientes</a>
+                            <a class="nav-link fw-bold fs-5" href="/client">Clientes</a>
                             </li>
                             <li class="nav-item">
-                            <a class="nav-link fw-bold fs-5" href="#">Menu</a>
+                            <a class="nav-link fw-bold fs-5" href="/menu">Menu</a>
                             </li>
                             {{--li para mostrar lo de usuario--}}
 
