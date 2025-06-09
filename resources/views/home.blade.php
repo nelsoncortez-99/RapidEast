@@ -14,7 +14,11 @@
 <hr>
 <h1>Pantalla de Inicio</h1>
 <hr>
-    Nombre: <b>Nelson Landaverde</b>
+    Nombre: <b>Josué Mauricio Benavides Batres #024424</b>
+    <br>
+    Nombre: <b>Nelson Stanley Landaverde Cortez #016924</b><br>
+    Nombre: <b>Ashley Nicole Vásquez Hernández #199223</b><br>
+    Nombre: <b>Josué Antonio Erazo Reyes #039024</b>
     <div class="container my-5">
     <div class="container my-5">
     <div class="row">
