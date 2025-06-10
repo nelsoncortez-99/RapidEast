@@ -23,7 +23,7 @@
     <div class="container my-5">
     <div class="row">
         <div class="col-md-6 mb-4 d-flex justify-content-center">
-            <a href="{{ route('order.create') }}"
+            <a href="/order/create"
                 class="btn btn-primary text-white fw-bold text-center d-flex align-items-center justify-content-center"
                 style="width: 100%; height: 150px; font-size: 2rem; max-width: 500px;">
                 Nueva Orden

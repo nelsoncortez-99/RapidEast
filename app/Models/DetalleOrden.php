@@ -3,27 +3,28 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Categoria;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Menu extends Model
+class DetalleOrden extends Model
 {
     use HasFactory;
-    protected $table = "menu";
+    protected $table = "detalleorden";
     protected $primaryKey = "codigo";
-    protected $fillable = ['nombre','descripcion','precio','category'];
+    protected $fillable = ['orden_id','menu_id','cantidad','subtotal'];
     public $hidden = ['created_at','update_at'];
     public $timestamps = true;
 
     public static function getFilteredData($search) {
-        return Menu::select('menu.*', 'categoria.nombre AS categoria')
-            ->join("categoria", "categoria.codigo", "=", "menu.category")
+        return DetalleOrden::select('detalleorden.*')
+            ->join("menu", "menu.codigo", "=", "detalleorden.menu_id")
+            ->join("ordenes", "ordenes.codigo", "=", "detalleorden.orden_id")
 
-            ->where('menu.codigo', 'like', $search)
+            ->where('detalleorden.codigo', 'like', $search)
             ->orWhere('menu.nombre', 'like', $search)
-            ->orWhere('menu.descripcion', 'like', $search)
-            ->orWhere('menu.precio', 'like', $search)
-            ->orWhere('categoria.nombre', 'like', $search);
+            ->orWhere('ordenes.numeromesa', 'like', $search)
+            ->orWhere('ordenes.fecha', 'like', $search)
+            ->orWhere('detalleorden.cantidad', 'like', $search)
+            ->orWhere('detalleorden.subtotal', 'like', $search);
     }
 
     public static function allDataSearched($search, $sortBy, $sort, $skip, $itemsPerPage) {
@@ -33,13 +34,9 @@ class Menu extends Model
             $query->skip($skip)
                 ->take($itemsPerPage);
         }
-        $query->orderBy("menu.$sortBy", $sort);
+        $query->orderBy("detalleorden.$sortBy", $sort);
             
         return $query->get();
             
-    }
-    public function categoria()
-    {
-        return $this->belongsTo(Categoria::class, 'category');
     }
 }

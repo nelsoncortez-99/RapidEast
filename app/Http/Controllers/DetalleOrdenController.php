@@ -3,12 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Menu;
-use App\Models\Orden;
-use App\Models\Categoria;
+use App\Models\DetalleOrden;
 use Illuminate\Support\Facades\Validator;
 
-class OrdenController extends Controller
+class DetalleOrdenController extends Controller
 {
     public function __construct(){
         $this->middleware('auth');
@@ -18,7 +16,7 @@ class OrdenController extends Controller
      */
     public function index()
     {
-        return view('ordenes/show');
+        return view('detalle/show');
     }
 
     /**
@@ -26,36 +24,20 @@ class OrdenController extends Controller
      */
     public function create()
     {
-        // Carga el menú junto con la relación categoria
-    $menu = Menu::with('categoria')->get(); // trae el menú con su categoría asociada
-    
-    // Carga todas las categorías
-    $categorias = Categoria::all();
-
-    // Retorna la vista con los datos
-    return view('ordenes.create', [
-        'menu' => $menu,
-        'categorias' => $categorias
-    ]);
+        return view('detalle/create');
     }
 
     public function ValidarCampos($request) {
         return Validator::make($request->all(),[
-            'fecha' => 'required',
-            'numeromesa' => 'required',
-            'total' => 'required',
-            'client' => 'required',
-            'empleado' => 'required',
-            'state' => 'required',
-            'mpago' => 'required'
+            'orden_id' => 'required',
+            'menu_id' => 'required',
+            'cantidad' => 'required',
+            'subtotal' => 'required'
         ], [
-            'fecha.required' => 'Fecha es obligatorio',
-            'numeromesa.required' => 'Número de mesa es obligatoria',
-            'total.required' => 'Total es obligatorio',
-            'client.required' => 'Cliente es obligatoria es obligatorio',
-            'empleado.required' => 'Empleado es obligatoria es obligatorio',
-            'state.required' => 'Estado es obligatoria es obligatorio',
-            'mpago.required' => 'Método de pago es obligatoria es obligatorio'
+            'orden_id.required' => 'Código de orden es obligatorio',
+            'menu_id.required' => 'Código de menu es obligatoria',
+            'cantidad.required' => 'Cantidad es obligatorio',
+            'subtotal.required' => 'Subtotal es obligatoria es obligatorio'
         ]);
     }
 
@@ -71,12 +53,12 @@ class OrdenController extends Controller
                 'message' => $validacion->messages()
             ],422);
         }else{
-            $menu= Orden::create($request->all());
+            $menu= DetalleOrden::create($request->all());
             return response()->json([
                 'code' => 200,
                 'message' => "Se creó el registro correctamente"
             ],200);
-        }
+        }   
     }
 
     /**
@@ -89,7 +71,7 @@ class OrdenController extends Controller
 
         //para extraer todos los registros
         if ($itemsPerPage == -1) {
-            $itemsPerPage =  Orden::count();
+            $itemsPerPage =  DetalleOrden::count();
             $skip = 0;
         }
 
@@ -102,19 +84,19 @@ class OrdenController extends Controller
         $search = "%$search%";
 
         //get register filtered
-        $filteredCount = Orden::getFilteredData($search)->count();
-        $orden = Orden::allDataSearched($search, $sortBy, $sort, $skip, $itemsPerPage);
+        $filteredCount = DetalleOrden::getFilteredData($search)->count();
+        $detalleorden = DetalleOrden::allDataSearched($search, $sortBy, $sort, $skip, $itemsPerPage);
         //esto es para reutilizar la funcion para generar datatable en functions.js
-        $orden = $orden->map(function ($orden) {
-            $orden->path = 'order';//sirve para la url de editar y eliminar
-            return $orden;
+        $detalleorden = $detalleorden->map(function ($detalleorden) {
+            $detalleorden->path = 'orderDetails';//sirve para la url de editar y eliminar
+            return $detalleorden;
         });
         //se retorna una array estructurado para el data table
         return response()->json([
             'draw' => intval($request->input('draw')),
-            'recordsTotal' => Orden::count(),
+            'recordsTotal' => DetalleOrden::count(),
             'recordsFiltered' => $filteredCount,
-            'data' => $orden]);
+            'data' => $detalleorden]);
     }
 
     /**
@@ -122,11 +104,9 @@ class OrdenController extends Controller
      */
     public function edit(string $id)
     {
-        $menu = Menu::all();//extrayendo marcas
-        $menu=Orden::where('codigo',$id)->first();
-        return view('ordenes/update')->with([
-            'orden' => $orden,
-            'menu' => $menu
+        $detalleorden=DetalleOrden::where('codigo',$id)->first();
+        return view('detalle/update')->with([
+            'detalleorden' => $detalleorden
         ]);
     }
 
@@ -142,16 +122,13 @@ class OrdenController extends Controller
                 'message' => $validacion->messages()
             ],422);
         }else{
-            $orden=Orden::find($id);
-            if($orden){
-                $orden->update([
-                    'fecha' => $request->fecha,
-                    'numeromesa' => $request->numeromesa,
-                    'total' => $request->total,
-                    'client' => $request->client,
-                    'empleado' => $request->empleado,
-                    'state' => $request->state,
-                    'mpago' => $request->mpago
+            $menu=DetalleOrden::find($id);
+            if($menu){
+                $menu->update([
+                    'orden_id' => $request->orden_id,
+                    'menu_id' => $request->menu_id,
+                    'cantidad' => $request->cantidad,
+                    'subtotal' => $request->subtotal
                 ]);
                 return response()->json([
                     'code' => 200,
@@ -171,9 +148,9 @@ class OrdenController extends Controller
      */
     public function destroy(string $id)
     {
-        $orden=Orden::find($id);
-        if($orden){
-            $orden->delete();
+        $menu=DetalleOrden::find($id);
+        if($menu){
+            $menu->delete();
             return response()->json([
                     'code' => 200,
                     'message' => "Registro eliminado"

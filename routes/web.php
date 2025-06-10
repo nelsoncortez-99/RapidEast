@@ -12,6 +12,7 @@ use  App\Http\Controllers\MenuController;
 use  App\Http\Controllers\MetodoPagoController;
 use  App\Http\Controllers\OrdenController;
 use  App\Http\Controllers\RolController;
+use  App\Http\Controllers\DetalleOrdenController;
 
 Route::get('/home', function () {
     return view('home');
@@ -25,6 +26,7 @@ Route::resource('/menu', MenuController::class);
 Route::resource('/mpayment', MetodoPagoController::class);
 Route::resource('/order', OrdenController::class);
 Route::resource('/role', RolController::class);
+Route::resource('/orderDetails', DetalleOrdenController::class);
 
 Auth::routes();
 
