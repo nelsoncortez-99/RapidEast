@@ -8,13 +8,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class DetalleOrden extends Model
 {
     use HasFactory;
+
     protected $table = "detalleorden";
     protected $primaryKey = "codigo";
-    protected $fillable = ['orden_id','menu_id','cantidad','subtotal'];
-    public $hidden = ['created_at','update_at'];
+    protected $fillable = ['orden_id', 'menu_id', 'cantidad', 'subtotal'];
+    protected $hidden = ['created_at', 'updated_at'];
     public $timestamps = true;
 
-    public static function getFilteredData($search) {
+    public function orden()
+    {
+        return $this->belongsTo(Orden::class, 'orden_id', 'codigo');
+    }
+
+    public function menu()
+    {
+        return $this->belongsTo(Menu::class, 'menu_id', 'codigo');
+    }
+
+    // Métodos de búsqueda
+    public static function getFilteredData($search)
+    {
         return DetalleOrden::select('detalleorden.*')
             ->join("menu", "menu.codigo", "=", "detalleorden.menu_id")
             ->join("ordenes", "ordenes.codigo", "=", "detalleorden.orden_id")
@@ -27,16 +40,14 @@ class DetalleOrden extends Model
             ->orWhere('detalleorden.subtotal', 'like', $search);
     }
 
-    public static function allDataSearched($search, $sortBy, $sort, $skip, $itemsPerPage) {
-        //se utiliza self para invocar metodo static dentro de la misma clase
+    public static function allDataSearched($search, $sortBy, $sort, $skip, $itemsPerPage)
+    {
         $query = self::getFilteredData($search);
-        if ($itemsPerPage !== -1) {//validar para extraer todos los datos
-            $query->skip($skip)
-                ->take($itemsPerPage);
+        if ($itemsPerPage !== -1) {
+            $query->skip($skip)->take($itemsPerPage);
         }
         $query->orderBy("detalleorden.$sortBy", $sort);
-            
+
         return $query->get();
-            
     }
 }

@@ -44,19 +44,26 @@ class ClienteController extends Controller
      */
     public function store(Request $request)
     {
-        $validacion=$this->ValidarCampos($request);
-        if($validacion -> fails()){
-            return response()->json([
-                'code' => 422,
-                'message' => $validacion->messages()
-            ],422);
-        }else{
-            $cliente= Cliente::create($request->all());
-            return response()->json([
-                'code' => 200,
-                'message' => "Se creó el registro correctamente"
-            ],200);
-        }
+        $validacion = $this->ValidarCampos($request);
+
+    if ($validacion->fails()) {
+        return response()->json([
+            'code' => 422,
+            'message' => $validacion->messages()
+        ], 422);
+    } else {
+        $cliente = Cliente::create($request->all());
+
+        return response()->json([
+            'code' => 200,
+            'message' => "Se creó el registro correctamente",
+            'cliente' => [
+                'codigo' => $cliente->codigo,
+                'nombre' => $cliente->nombre,
+                'apellido' => $cliente->apellido
+            ]
+        ], 200);
+    }
     }
 
     /**

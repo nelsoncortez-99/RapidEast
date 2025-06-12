@@ -100,15 +100,16 @@ function save_data(url, frm, token) {
     getAlert('success',data.message);
   })
   .fail(function (data) {
-    response=data.responseJSON;
+    let response = data.responseJSON || {};
     var clases = frm.find('.invalid-feedback');
-    if(response.code == 422){
-      addMessageRequired(clases,response.message);
-    }else{
-      getAlert('error',response.mesage);
+    if(response.code === 422){
+      addMessageRequired(clases, response.message);
+    } else if (response.message) {
+      getAlert('error', response.message);
+    } else {
+      getAlert('error', 'Error desconocido, intente de nuevo');
     }
-    
-  });
+});
 }
 
 function save_update(url, frm, token) {

@@ -25,6 +25,7 @@ Route::resource('/state', EstadoController::class);
 Route::resource('/menu', MenuController::class);
 Route::resource('/mpayment', MetodoPagoController::class);
 Route::resource('/order', OrdenController::class);
+Route::get('/order/data', [OrdenController::class, 'data'])->name('order.data');
 Route::resource('/role', RolController::class);
 Route::resource('/orderDetails', DetalleOrdenController::class);
 

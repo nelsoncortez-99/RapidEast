@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id('codigo');
             $table->date('fecha');
             $table->integer('numeromesa');
-            $table->double('total',8,2);
 
             $table->bigInteger('client')->unsigned();//para la relacion de la foreing key
             $table->foreign('client')->references('codigo')->on('cliente');//llave foranea 
