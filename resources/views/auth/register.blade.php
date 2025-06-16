@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Registro de Usuario')
+
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
@@ -43,15 +45,14 @@
                             <label for="rol" class="col-md-4 col-form-label text-md-end">{{ __('Rol') }}</label>
 
                             <div class="col-md-6">
-                                <select name="rol" id="" class="form-select">
-                                            <option value="">--Seleccionar Rol--</option>
-                                            @foreach ($roles as $item)
-                                                <option value="{{$item->codigo}}">{{$item->nombre}}</option>
-                                            @endforeach
-                                        </select>
-                                        <span class="invalid-feedback d-block" key="rol" role="alert">
-                                    <strong class="mensaje"></strong>
-                                </span>
+                                <select id="rol" class="form-control @error('rol') is-invalid @enderror" name="rol" required>
+                                    <option value="">Seleccione un rol</option>
+                                    @foreach($roles as $rol)
+                                        <option value="{{ $rol->codigo }}" {{ old('rol') == $rol->codigo ? 'selected' : '' }}>
+                                            {{ $rol->nombre }}
+                                        </option>
+                                    @endforeach
+                                </select>
 
                                 @error('rol')
                                     <span class="invalid-feedback" role="alert">
@@ -60,7 +61,6 @@
                                 @enderror
                             </div>
                         </div>
-
 
                         <div class="row mb-3">
                             <label for="password" class="col-md-4 col-form-label text-md-end">{{ __('Password') }}</label>

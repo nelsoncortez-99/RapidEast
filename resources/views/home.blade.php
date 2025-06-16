@@ -14,21 +14,20 @@
 <hr>
 <h1>Pantalla de Inicio</h1>
 <hr>
-    Nombre: <b>Josué Mauricio Benavides Batres #024424</b>
-    <br>
-    Nombre: <b>Nelson Stanley Landaverde Cortez #016924</b><br>
-    Nombre: <b>Ashley Nicole Vásquez Hernández #199223</b><br>
-    Nombre: <b>Josué Antonio Erazo Reyes #039024</b>
     <div class="container my-5">
     <div class="container my-5">
     <div class="row">
+        @if(in_array(Auth::user()->rol, [1,2]))
         <div class="col-md-6 mb-4 d-flex justify-content-center">
             <a href="/order/create"
                 class="btn btn-primary text-white fw-bold text-center d-flex align-items-center justify-content-center"
                 style="width: 100%; height: 150px; font-size: 2rem; max-width: 500px;">
                 Nueva Orden
             </a>
+            
         </div>
+        @endif
+        @if(in_array(Auth::user()->rol, [1,3]))
         <div class="col-md-6 mb-4 d-flex justify-content-center">
             <a href="{{ route('order.index') }}"
                 class="btn btn-secondary text-white fw-bold text-center d-flex align-items-center justify-content-center"
@@ -36,10 +35,12 @@
                 Órdenes
             </a>
         </div>
+        @endif
     </div>
 </div>
 
 </div>
+@if(Auth::user()->rol === 1)
 <div class="row">
     <!-- Cards con resumen -->
     <div class="col-md-3">
@@ -82,5 +83,6 @@
         </div>
     </div>
 </div>
+@endif
 @endsection
     

@@ -41,6 +41,35 @@ class Orden extends Model
         return $this->belongsTo(MetodoPago::class, 'mpago', 'codigo');
     }
 
+    public function eliminarOrdenCompleta(): bool
+    {
+        try {
+            DB::beginTransaction();
+            
+            // Eliminar todos los detalles primero
+            $this->detalles()->delete();
+            
+            // Luego eliminar la orden
+            $resultado = $this->delete();
+            
+            DB::commit();
+            
+            return $resultado;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return false;
+        }
+    }
+
+    /**
+     * Actualiza el estado de la orden
+     */
+    public function actualizarEstadoOrden(string $nuevoEstado): bool
+    {
+        $this->state = $nuevoEstado;
+        return $this->save();
+    }
+
     // Métodos de búsqueda que tienes
     public static function getFilteredData($search) {
         return Orden::select('ordenes.*')

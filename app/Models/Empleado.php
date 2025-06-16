@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Empleado extends Model
@@ -15,14 +16,19 @@ class Empleado extends Model
     public $timestamps = true;
 
     public static function getFilteredData($search) {
-        return Empleado::select('empleados.*', 'users.nombre AS usuario')
-            ->join("users", "users.codigo", "=", "empleados.user")
-
-            ->where('empleados.codigo', 'like', $search)
-            ->orWhere('empleados.nombre', 'like', $search)
-            ->orWhere('empleados.apellido', 'like', $search)
-            ->orWhere('empleados.telefono', 'like', $search)
-            ->orWhere('users.nombre', 'like', $search);
+    return Empleado::select('empleados.*', 'users.name AS usuario')
+        ->leftJoin("users", "users.id", "=", "empleados.user") // Cambiado a users.id
+        ->where(function($query) use ($search) {
+            $query->where('empleados.codigo', 'like', $search)
+                ->orWhere('empleados.nombre', 'like', $search)
+                ->orWhere('empleados.apellido', 'like', $search)
+                ->orWhere('empleados.telefono', 'like', $search)
+                ->orWhere('users.name', 'like', $search);
+        });
+}
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user', 'id'); // Relación especial
     }
 
     public static function allDataSearched($search, $sortBy, $sort, $skip, $itemsPerPage) {

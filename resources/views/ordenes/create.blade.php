@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Nueva Orden')
+@section('title', isset($orden) ? 'Editar Orden' : 'Nueva Orden')
 
 @section('content')
 <div class="row">
@@ -20,14 +20,20 @@
         <h4>Menú</h4>
         <div class="row" id="menu-list">
             @foreach ($menu as $item)
-                <div class="col-md-4 menu-item" data-nombre="{{ strtolower($item->nombre) }}" data-precio="{{ $item->precio }}" data-categoria="{{ $item->categoria->codigo ?? '' }}">
+                <div class="col-md-4 menu-item" 
+                     data-nombre="{{ strtolower($item->nombre) }}" 
+                     data-precio="{{ $item->precio }}" 
+                     data-categoria="{{ $item->categoria->codigo ?? '' }}">
                     <div class="card mb-3">
                         <div class="card-body">
                             <h5>{{ $item->nombre }}</h5>
                             <p>{{ $item->descripcion }}</p>
-                            <p><strong>Precio: ${{ $item->precio }}</strong></p>
+                            <p><strong>Precio: ${{ number_format($item->precio, 2) }}</strong></p>
                             <input type="number" min="1" value="1" class="form-control cantidad" id="cantidad-{{ $item->codigo }}">
-                            <button class="btn btn-sm btn-success mt-2" onclick="agregarAlCarrito({{ $item->codigo }}, '{{ $item->nombre }}', {{ $item->precio }})">Agregar</button>
+                            <button class="btn btn-sm btn-success mt-2" 
+                                    onclick="agregarAlCarrito({{ $item->codigo }}, '{{ addslashes($item->nombre) }}', {{ $item->precio }})">
+                                Agregar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -35,7 +41,6 @@
         </div>
     </div>
 
-    
     {{-- Carrito --}}
     <div class="col-md-4">
         <h4>Orden actual</h4>
@@ -43,116 +48,179 @@
         </ul>
         <hr>
         <p><strong>Total: $<span id="total">0.00</span></strong></p>
-        <form id="frmSaveDataOrden" action="/order" method="POST">
-    @csrf
-    <input type="hidden" name="detalle" id="detalleInput">
-    <input type="hidden" name="state" value="1" id="detalleInput">
+        
+        <form id="frmSaveDataOrden" action="{{ isset($orden) ? route('order.update', $orden->codigo) : route('order.store') }}" method="POST">
+            @csrf
+            @if(isset($orden))
+                @method('PUT')
+            @endif
+            
+            <input type="hidden" name="detalle" id="detalleInput">
+            <input type="hidden" name="state" value="{{ isset($orden) ? $orden->state : '1' }}">
 
-    <div class="mb-2">
-        <label for="mesa">Número de mesa:</label>
-        <input type="number" min="1" name="numeromesa" class="form-control" required>
-    </div>
+            <div class="mb-2">
+                <label for="mesa">Número de mesa:</label>
+                <input type="number" min="1" name="numeromesa" class="form-control" 
+                       value="{{ $orden->numeromesa ?? old('numeromesa') }}" required>
+            </div>
 
-    <div class="col-md-6">
-        <label for="busquedaCliente" class="form-label">Buscar cliente</label>
-        <input type="text" class="form-control" id="busquedaCliente" placeholder="Ingrese nombre del cliente">
-    </div>
-    <div class="col-md-4">
-        <label for="clienteSelect" class="form-label">Seleccionar cliente</label>
-        <select name="client" id="clienteSelect" class="form-select" required>
-            <option value="">Seleccione un cliente</option>
-            @foreach($clientes as $cliente)
-                <option value="{{ $cliente->codigo }}">
-                    {{ $cliente->nombre }} {{ $cliente->apellido }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-    <div class="col-md-7 d-flex align-items-end">
-        <button class="btn btn-outline-success mt-3 w-10" path="/client/create" id="addForm" data-bs-toggle="modal" data-bs-target="#myModal">Registrar nuevo cliente</button>
-    </div>
-    <div class="mb-2">
-    <label for="mpago">Medio de Pago:</label>
-    <select name="mpago" class="form-select" required>
-        <option value="">Seleccione un medio de pago</option>
-        @foreach($mediospago as $medio)
-            <option value="{{ $medio->codigo }}">{{ $medio->nombre }}</option>
-        @endforeach
-    </select>
-</div>
+            <div class="row mb-2">
+                <div class="col-md-8">
+                    <label for="busquedaCliente" class="form-label">Buscar cliente</label>
+                    <input type="text" class="form-control" id="busquedaCliente" placeholder="Ingrese nombre del cliente">
+                </div>
+                <div class="col-md-8">
+                    <label for="clienteSelect" class="form-label">Seleccionar cliente</label>
+                    <select name="client" id="clienteSelect" class="form-select" required>
+                        <option value="">Seleccione un cliente</option>
+                        @foreach($clientes as $cliente)
+                            <option value="{{ $cliente->codigo }}"
+                                {{ (isset($orden) && $orden->client == $cliente->codigo) ? 'selected' : '' }}>
+                                {{ $cliente->nombre }} {{ $cliente->apellido }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-outline-success" path="/client/create" id="addForm" data-bs-toggle="modal" data-bs-target="#myModal">
+                        <i class="fas fa-plus"></i> Nuevo
+                    </button>
+                </div>
+            </div>
 
-    <button type="submit" class="btn btn-primary mt-3">Guardar Orden</button>
-</form>
+            <div class="mb-2">
+                <label for="mpago">Medio de Pago:</label>
+                <select name="mpago" class="form-select" required>
+                    <option value="">Seleccione un medio de pago</option>
+                    @foreach($mediospago as $medio)
+                        <option value="{{ $medio->codigo }}"
+                            {{ (isset($orden) && $orden->mpago == $medio->codigo) ? 'selected' : '' }}>
+                            {{ $medio->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="mb-3">
+                            <label for="state" class="form-label">Estado</label>
+                            <select name="state" id="state" class="form-select" required>
+                                <option value="">Seleccione Estado</option>
+                                @foreach($estados as $estado)
+                                    <option value="{{ $estado->codigo }}" 
+                                        {{ (isset($orden) && $orden->state == $estado->codigo) ? 'selected' : '' }}>
+                                        {{ $estado->nombre }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">
+                    {{ isset($orden) ? 'Actualizar Orden' : 'Guardar Orden' }}
+                </button>
+                
+                @if(isset($orden))
+                    <a href="{{ route('order.index') }}" class="btn btn-secondary">Cancelar</a>
+                @endif
+            </div>
+        </form>
     </div>
 </div>
 @endsection
 
 @section('scripts')
-
 <script>
-    let carrito = [];
-let total = 0;
-
-function agregarAlCarrito(id, nombre, precio) {
-    let cantidad = parseInt(document.getElementById('cantidad-' + id).value);
-    if (cantidad < 1) return;
-
-    // Verificar si el producto ya está en el carrito
-    const itemExistente = carrito.find(item => item.menu_id === id);
+    // Inicialización del carrito
+    let carrito = {!! 
+        isset($orden) 
+            ? json_encode($orden->detalles->map(function($detalle) {
+                return [
+                    'menu_id' => $detalle->menu_id,
+                    'nombre' => $detalle->menu->nombre,
+                    'precio' => $detalle->menu->precio,
+                    'cantidad' => $detalle->cantidad,
+                    'subtotal' => $detalle->subtotal
+                ];
+            }))
+            : '[]'
+    !!};
     
-    if (itemExistente) {
-        // Si ya existe, actualizar cantidad y subtotal
-        itemExistente.cantidad += cantidad;
-        itemExistente.subtotal = itemExistente.precio * itemExistente.cantidad;
-    } else {
-        // Si no existe, agregar nuevo item
-        let item = {
-            menu_id: id,
-            nombre: nombre,
-            precio: precio,
-            cantidad: cantidad,
-            subtotal: precio * cantidad
-        };
-        carrito.push(item);
+    let total = {{ isset($orden) ? $orden->total : 0 }};
+
+    // Función para formatear moneda
+    function formatMoney(amount) {
+        return parseFloat(amount).toFixed(2);
     }
-    
-    actualizarCarrito();
-}
 
-function eliminarDelCarrito(index) {
-    carrito.splice(index, 1); // Eliminar el elemento en la posición index
-    actualizarCarrito();
-}
-
-function actualizarCarrito() {
-    let lista = document.getElementById('carrito');
-    lista.innerHTML = '';
-    total = 0;
-
-    carrito.forEach((item, index) => {
-        total += item.subtotal;
-        lista.innerHTML += `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    ${item.nombre} x ${item.cantidad}
-                    <span class="text-muted">$${item.precio.toFixed(2)} c/u</span>
-                </div>
-                <div class="d-flex align-items-center">
-                    <span class="me-2">$${item.subtotal.toFixed(2)}</span>
-                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarDelCarrito(${index})">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </li>
-        `;
+    // Inicializar el carrito al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        actualizarCarrito();
+        filtrarMenu(); // Aplicar filtros iniciales si hay valores
     });
 
-    document.getElementById('total').innerText = total.toFixed(2);
-    document.getElementById('detalleInput').value = JSON.stringify(carrito);
-}
+    // Función para agregar productos al carrito
+    function agregarAlCarrito(id, nombre, precio) {
+        const cantidadInput = document.getElementById('cantidad-' + id);
+        let cantidad = parseInt(cantidadInput.value);
+        
+        if (cantidad < 1 || isNaN(cantidad)) {
+            cantidadInput.value = 1;
+            cantidad = 1;
+        }
 
-    // FILTRADO
+        const itemExistente = carrito.find(item => item.menu_id == id);
+        
+        if (itemExistente) {
+            itemExistente.cantidad += cantidad;
+            itemExistente.subtotal = itemExistente.precio * itemExistente.cantidad;
+        } else {
+            carrito.push({
+                menu_id: id,
+                nombre: nombre,
+                precio: parseFloat(precio),
+                cantidad: cantidad,
+                subtotal: parseFloat(precio) * cantidad
+            });
+        }
+        
+        actualizarCarrito();
+        cantidadInput.value = 1; // Resetear cantidad después de agregar
+    }
+
+    // Función para eliminar productos del carrito
+    function eliminarDelCarrito(index) {
+        carrito.splice(index, 1);
+        actualizarCarrito();
+    }
+
+    // Función para actualizar la visualización del carrito
+    function actualizarCarrito() {
+        const lista = document.getElementById('carrito');
+        lista.innerHTML = '';
+        total = 0;
+
+        carrito.forEach((item, index) => {
+            total += item.subtotal;
+            lista.innerHTML += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        ${item.nombre} x ${item.cantidad}
+                        <span class="text-muted">$${formatMoney(item.precio)} c/u</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="me-2">$${formatMoney(item.subtotal)}</span>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarDelCarrito(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </li>
+            `;
+        });
+
+        document.getElementById('total').innerText = formatMoney(total);
+        document.getElementById('detalleInput').value = JSON.stringify(carrito);
+    }
+
+    // Funciones de filtrado
     const searchInput = document.getElementById('search');
     const categoriaFilter = document.getElementById('categoriaFilter');
     const menuItems = document.querySelectorAll('.menu-item');
@@ -177,11 +245,12 @@ function actualizarCarrito() {
         });
     }
 
+    // Event listeners para filtros
     searchInput.addEventListener('input', filtrarMenu);
     categoriaFilter.addEventListener('change', filtrarMenu);
-</script>
-<script>
-    document.getElementById('busquedaCliente').addEventListener('input', function () {
+
+    // Filtrado de clientes
+    document.getElementById('busquedaCliente').addEventListener('input', function() {
         const filtro = this.value.toLowerCase();
         const opciones = document.querySelectorAll('#clienteSelect option');
 
@@ -194,63 +263,62 @@ function actualizarCarrito() {
             }
         });
     });
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('clienteFormModal');
 
-    if (form) {
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
+    // Manejo del formulario de nuevo cliente (modal)
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('clienteFormModal');
 
-            const url = form.action;
-            const formData = new FormData(form);
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
 
-            fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw response;
-                return response.json();
-            })
-            .then(data => {
-                if (data.code === 200) {
-                    // Cerrar el modal
-                    const modalElement = document.getElementById('myModal');
-                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                    modalInstance.hide();
+                const url = form.action;
+                const formData = new FormData(form);
 
-                    // Limpiar formulario del modal
-                    form.reset();
-
-                    // Agregar nuevo cliente al dropdown y seleccionarlo
-                    const clienteSelect = document.getElementById('clienteSelect');
-                    const nuevaOpcion = document.createElement('option');
-                    nuevaOpcion.value = data.cliente.codigo;
-                    nuevaOpcion.textContent = `${data.cliente.nombre} ${data.cliente.apellido}`;
-                    nuevaOpcion.selected = true;
-                    clienteSelect.appendChild(nuevaOpcion);
-                }
-            })
-            .catch(async (error) => {
-                let errorMsg = 'Error al guardar el cliente.';
-                try {
-                    const errData = await error.json();
-                    if (errData.message) {
-                        const mensajes = Object.values(errData.message).flat().join('\n');
-                        errorMsg = mensajes;
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     }
-                } catch (_) {}
-                alert(errorMsg);
+                })
+                .then(response => {
+                    if (!response.ok) throw response;
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.code === 200) {
+                        // Cerrar el modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('myModal'));
+                        modal.hide();
+
+                        // Agregar nuevo cliente al dropdown y seleccionarlo
+                        const clienteSelect = document.getElementById('clienteSelect');
+                        const nuevaOpcion = document.createElement('option');
+                        nuevaOpcion.value = data.cliente.codigo;
+                        nuevaOpcion.textContent = `${data.cliente.nombre} ${data.cliente.apellido}`;
+                        nuevaOpcion.selected = true;
+                        clienteSelect.appendChild(nuevaOpcion);
+
+                        // Mostrar notificación
+                        toastr.success(data.message);
+                    }
+                })
+                .catch(async (error) => {
+                    let errorMsg = 'Error al guardar el cliente.';
+                    try {
+                        const errData = await error.json();
+                        if (errData.message) {
+                            errorMsg = Object.values(errData.message).flat().join('\n');
+                        } else if (errData.error) {
+                            errorMsg = errData.error;
+                        }
+                    } catch (_) {}
+                    toastr.error(errorMsg);
+                });
             });
-        });
-    }
-});
+        }
+    });
 </script>
-
-
 @endsection

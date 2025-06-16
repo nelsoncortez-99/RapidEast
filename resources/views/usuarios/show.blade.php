@@ -1,6 +1,6 @@
 @extends('layouts.app')
 {{-- Definir un título --}}
-@section('title','Marcas')
+@section('title','Usuarios')
 
 {{-- Definir contenido --}}
 @section('content')
@@ -8,19 +8,19 @@
     <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item" aria-current="page">Inicio</li>
-        <li class="breadcrumb-item active" aria-current="page">Marcas</li>
+        <li class="breadcrumb-item active" aria-current="page">Usuarios</li>
     </ol>
 </nav>
 <hr>
 <div class="card">
     <div class="card-header">
-        <div class="row text center">
+        <div class="row text center">   
             <div class="col">
-                <h3>Listado de Marcas</h3>
+                <h3>Usuarios</h3>
             </div>
             <div class="col">
-                <button class="btn btn-md btn-dark" path="/marca/create" id="addForm" data-bs-toggle="modal" data-bs-target="#myModal">
-                    Crear Marca
+                <button class="btn btn-md btn-dark" path="/user/create" id="addForm" data-bs-toggle="modal" data-bs-target="#myModal">
+                    Agregar Usuario
                 </button>
             </div>
         </div>
@@ -30,6 +30,8 @@
             <thead>
                 <th>Código</th>
                 <th>Nombre</th>
+                <th>Email</th>
+                <th>Rol</th>
                 <th>Acciones</th>
             </thead>
             
@@ -41,11 +43,13 @@
 @section('scripts')
 <script type="text/javascript">
     $(document).ready(function () {
-        var ruta = "/marca/show";
+        var ruta = "/user/data";
         var columnas = [
-            {data:'codigo'},
-            {data:'nombre'},
-            {data:'codigo'}//para usar el id a la hora de editar y eliminar
+            {data:'id'},
+            {data:'name'},
+            {data:'email'},
+            {data:'rol'},
+            {data:'id'}//para usar el id a la hora de editar y eliminar
         ]
         dt=generateDataTable(ruta, columnas);
     });

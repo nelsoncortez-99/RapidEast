@@ -5,26 +5,29 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\DetalleOrden;
-use App\Models\User;
 use App\Models\MetodoPago;
 use App\Models\Menu;
+use App\Models\Estado;
 use App\Models\Orden;
 use App\Models\Categoria;
 use App\Models\Cliente;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class OrdenController extends Controller
 {
-    public function __construct(){
+    public function __construct()
+    {
         $this->middleware('auth');
     }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         $ordenes = Orden::with(['cliente', 'detalles.menu'])->get();
-        return view('ordenes.index', compact('ordenes')); // Ahora apunta a index.blade.php
+        return view('ordenes.index', compact('ordenes'));
     }
 
     /**
@@ -35,27 +38,10 @@ class OrdenController extends Controller
         $clientes = Cliente::all();
         $categorias = Categoria::all();
         $menu = Menu::all();
+        $estados = Estado::all();
         $mediospago = MetodoPago::all();
 
-        return view('ordenes.create', compact('clientes', 'categorias', 'menu', 'mediospago'));
-    }
-
-    public function ValidarCampos($request) {
-        return Validator::make($request->all(),[
-            'fecha' => 'required',
-            'numeromesa' => 'required',
-            'client' => 'required',
-            'empleado' => 'required',
-            'state' => 'required',
-            'mpago' => 'required'
-        ], [
-            'fecha.required' => 'Fecha es obligatorio',
-            'numeromesa.required' => 'Número de mesa es obligatoria',
-            'client.required' => 'Cliente es obligatoria es obligatorio',
-            'empleado.required' => 'Empleado es obligatoria es obligatorio',
-            'state.required' => 'Estado es obligatoria es obligatorio',
-            'mpago.required' => 'Método de pago es obligatoria es obligatorio'
-        ]);
+        return view('ordenes.create', compact('clientes', 'categorias', 'menu', 'mediospago','estados'));
     }
 
     /**
@@ -64,53 +50,50 @@ class OrdenController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-        'numeromesa' => 'required|integer|min:1',
-        'client' => 'required|exists:cliente,codigo',
-        'mpago' => 'required|exists:metodopago,codigo',
-        'detalle' => 'required|json',
-    ]);
-
-    try {
-        DB::beginTransaction();
-
-        // Decodificar el detalle (carrito)
-        $detalle = json_decode($request->detalle, true);
-
-        // Crear la orden
-        $orden = Orden::create([
-            'client' => $request->client,
-            'numeromesa' => $request->numeromesa,
-            'empleado' => auth()->id(),
-            'mpago' => $request->mpago,
-            'state' => $request->state,
-            'fecha' => now(),
-            'total' => array_sum(array_column($detalle, 'subtotal')), // Calcular total
+            'numeromesa' => 'required|integer|min:1',
+            'client' => 'required|exists:cliente,codigo',
+            'mpago' => 'required|exists:metodopago,codigo',
+            'detalle' => 'required|json',
         ]);
 
-        // Guardar cada ítem del detalle
-        foreach ($detalle as $item) {
-            DetalleOrden::create([
-                'orden_id' => $orden->codigo,
-                'menu_id' => $item['menu_id'],
-                'cantidad' => $item['cantidad'],
-                'subtotal' => $item['subtotal'],
+        try {
+            DB::beginTransaction();
+
+            $detalle = json_decode($request->detalle, true);
+
+            $orden = Orden::create([
+                'client' => $request->client,
+                'numeromesa' => $request->numeromesa,
+                'empleado' => auth()->id(),
+                'mpago' => $request->mpago,
+                'state' => 1, // Estado inicial: Pendiente
+                'fecha' => now(),
+                'total' => array_sum(array_column($detalle, 'subtotal')),
             ]);
+
+            foreach ($detalle as $item) {
+                DetalleOrden::create([
+                    'orden_id' => $orden->codigo,
+                    'menu_id' => $item['menu_id'],
+                    'cantidad' => $item['cantidad'],
+                    'subtotal' => $item['subtotal'],
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Orden guardada correctamente',
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar: ' . $e->getMessage(),
+            ], 500);
         }
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Orden guardada correctamente',
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Error al guardar: ' . $e->getMessage(),
-        ], 500);
-    }
     }
 
     /**
@@ -118,95 +101,129 @@ class OrdenController extends Controller
      */
     public function show($id)
     {
-        // Buscar la orden por id con las relaciones necesarias
         $orden = Orden::with(['cliente', 'detalles.menu'])->findOrFail($id);
-
-        // Retornar la vista para mostrar esa orden individual
         return view('ordenes.show', compact('orden'));
     }
-
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit($id)
     {
-        $menu = Menu::all();//extrayendo marcas
-        $menu=Orden::where('codigo',$id)->first();
-        return view('ordenes/update')->with([
+        $orden = Orden::with(['detalles.menu', 'cliente', 'metodoPago'])->findOrFail($id);
+        $clientes = Cliente::all();
+        $estados = Estado::all();
+        $categorias = Categoria::with('menus')->get();
+        $mediospago = MetodoPago::all();
+        $menu = Menu::all();
+        
+        return view('ordenes.create', [
             'orden' => $orden,
-            'menu' => $menu
+            'clientes' => $clientes,
+            'categorias' => $categorias,
+            'mediospago' => $mediospago,
+            'estados' => $estados,
+            'menu' => $menu,
+            'editing' => true
         ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
-    // Si es un cambio de estado desde tu función JavaScript
-    if ($request->has('estado')) {
         $orden = Orden::findOrFail($id);
-        $orden->estado = $orden->estado == 'completado' ? 'pendiente' : 'completado';
-        $orden->save();
         
-        return response()->json([
-            'estado' => $orden->estado,
-            'code' => 200,
-            'message' => 'Estado actualizado'
+        $validated = $request->validate([
+            'numeromesa' => 'required|integer|min:1',
+            'client' => 'required|exists:cliente,codigo',
+            'mpago' => 'required|exists:metodopago,codigo',
+            'state' => 'required|exists:estado,codigo',
+            'detalle' => 'required|json'
         ]);
-    }
 
-    // Validación para actualización normal
-    $validacion = $this->ValidarCampos($request);
-    if($validacion->fails()){
-        return response()->json([
-            'code' => 422,
-            'message' => $validacion->messages()
-        ], 422);
-    }
+        try {
+            DB::beginTransaction();
+            
+            $orden->update([
+                'numeromesa' => $validated['numeromesa'],
+                'client' => $validated['client'],
+                'state' => $validated['state'],
+                'mpago' => $validated['mpago']
+            ]);
 
-    // Actualización normal
-    $orden = Orden::find($id);
-    if($orden){
-        $orden->update([
-            'fecha' => $request->fecha,
-            'numeromesa' => $request->numeromesa,
-            'client' => $request->client,
-            'empleado' => $request->empleado,
-            'state' => $request->state,
-            'mpago' => $request->mpago
-        ]);
-        
-        return response()->json([
-            'code' => 200,
-            'message' => "Registro actualizado"
-        ], 200);
+            $orden->detalles()->delete();
+            $detalles = json_decode($validated['detalle'], true);
+            $total = 0;
+            
+            foreach ($detalles as $item) {
+                $subtotal = $item['precio'] * $item['cantidad'];
+                $total += $subtotal;
+                
+                DetalleOrden::create([
+                    'orden_id' => $orden->codigo,
+                    'menu_id' => $item['menu_id'],
+                    'cantidad' => $item['cantidad'],
+                    'subtotal' => $subtotal
+                ]);
+            }
+
+            $orden->update(['total' => $total]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Orden actualizada correctamente',
+                'redirect' => route('order.index')
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar: ' . $e->getMessage()
+            ], 500);
+        }
     }
-    
-    return response()->json([
-        'code' => 400,
-        'message' => "Registro no encontrado"
-    ], 400);
-}
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        $orden=Orden::find($id);
-        if($orden){
-            $orden->delete();
+        try {
+            $orden = Orden::findOrFail($id);
+            
+            DB::transaction(function() use ($orden) {
+                $orden->detalles()->delete();
+                $orden->delete();
+            });
+
             return response()->json([
-                    'code' => 200,
-                    'message' => "Registro eliminado"
-                ],200);
-        }else{
+                'success' => true,
+                'message' => 'Orden eliminada correctamente'
+            ]);
+
+        } catch (\Exception $e) {
             return response()->json([
-                    'code' => 400,
-                    'message' => "Registro no encontrado"
-                ],400);
+                'success' => false,
+                'message' => 'Error al eliminar: ' . $e->getMessage()
+            ], 500);
         }
+    }
+
+    /**
+     * Get orders data for API
+     */
+    public function data()
+    {
+        $ordenes = Orden::with(['cliente', 'detalles.menu'])
+                        ->orderBy('state')
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+
+        return response()->json(['data' => $ordenes]);
     }
 }

@@ -29,7 +29,7 @@
                 <select name="category" id="" class="form-select">
                     <option value="">--Seleccionar Categoria--</option>
                     @foreach ($categoria as $item)
-                        <option value="{{$item->codigo}}" {{ ($item->codigo==$menu->categoria)?'selected':'' }}>{{$item->nombre}}</option>
+                        <option value="{{$item->codigo}}" {{ ($item->codigo==$menu->category)?'selected':'' }}>{{$item->nombre}}</option>
                     @endforeach
                 </select>
                 <span class="invalid-feedback d-block" key="category" role="alert">
